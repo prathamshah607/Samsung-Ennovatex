@@ -37,6 +37,7 @@ dependencies:
   ollama: ^1.0.4
   google_fonts: ^6.2.1
   latext: ^0.5.0
+  speech_to_text: ^7.3.0
 
 dev_dependencies:
   flutter_test:
