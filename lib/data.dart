@@ -1,34 +1,26 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:ollama/ollama.dart';
 
+Ollama _ollama = Ollama();
 String continuous = "";
 List conversations = [];
 
-void generate(String query, Function updateUI) async {
-  // Add user message
+void generate(dynamic query, Function updateUI) async {
   conversations.add({"actor": "user", "message": query});
-  
-  // Initialize generator message
   continuous = "";
   conversations.add({"actor": "generator", "message": continuous});
-  
+
   updateUI();
 
   try {
-    // Send query to local Python backend running Phi-3 Mini
-    final response = await http.post(
-      Uri.parse("http://127.0.0.1:8000/chat"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"query": query}),
+    final stream = _ollama.generate(
+      query,
+      model: "phi3",
     );
 
-    if (response.statusCode == 200) {
-      // Update generator message with backend response
-      continuous = jsonDecode(response.body)["response"];
+    await for (final chunk in stream) {
+      continuous += chunk.text;
       conversations.last['message'] = continuous;
-      updateUI();
-    } else {
-      continuous = 'Error: ${response.statusCode}';
+
       updateUI();
     }
   } catch (e) {

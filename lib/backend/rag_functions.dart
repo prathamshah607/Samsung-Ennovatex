@@ -18,7 +18,21 @@ Future<List<Message>> getRagContext(String query) async {
   }
 }
 
-void generateOffline(String userQuery, Function updateUI) async {
+Future<String> callPhi3(String prompt) async {
+  try {
+    final result = await Process.run(
+      'python',
+      ['rag_backend/generate_phi3.py', prompt],
+    );
+
+    if (result.exitCode != 0) return "Error: ${result.stderr}";
+    return result.stdout.toString().trim();
+  } catch (e) {
+    return "Error calling Phi-3: $e";
+  }
+}
+
+void generateWithPhi3(String userQuery, Function updateUI) async {
   addMessage("user", userQuery);
   updateUI();
 
@@ -27,17 +41,17 @@ void generateOffline(String userQuery, Function updateUI) async {
     ['rag_backend/ingest.py', 'user', userQuery, ""],
   );
 
-  List<Message> contextAndResponse = await getRagContext(userQuery);
+  List<Message> context = await getRagContext(userQuery);
+  String contextText = context.map((m) => m.text).join("\n");
 
-  if (contextAndResponse.isEmpty) {
-    addMessage("generator", "Sorry, I couldn't generate a response.");
-    updateUI();
-    return;
-  }
+  String phi3Prompt = "Context:\n$contextText\nUser: $userQuery";
+  String phi3Response = await callPhi3(phi3Prompt);
 
-  for (var msg in contextAndResponse) {
-    addMessage(msg.actor, msg.text, imagePath: msg.imagePath);
-  }
+  addMessage("generator", phi3Response);
+  await Process.run(
+    'python',
+    ['rag_backend/ingest.py', 'generator', phi3Response, ""],
+  );
 
   updateUI();
 }
