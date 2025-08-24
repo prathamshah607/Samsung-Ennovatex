@@ -5,6 +5,11 @@ import 'package:saahas/l.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Test phi3 at startup
+  testPhi3();
+
   runApp(const Main());
 }
 
@@ -62,6 +67,10 @@ class MainState extends State<Main> {
     }
   }
 
+  void updateUI() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -95,12 +104,9 @@ class MainState extends State<Main> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
                       ),
-                      style: GoogleFonts.quicksand(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
+                      style: GoogleFonts.quicksand(color: Colors.white, fontSize: 16),
                       onSubmitted: (value) {
-                        generate(value, updateUI);
+                        generateWithRag(value, updateUI);
                       },
                     ),
                   ),
@@ -114,7 +120,7 @@ class MainState extends State<Main> {
                         color: Colors.white,
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -123,8 +129,8 @@ class MainState extends State<Main> {
                 padding: const EdgeInsets.all(12),
                 itemCount: conversations.length,
                 itemBuilder: (context, index) {
-                  final message = conversations[index]['message'];
-                  final isUser = index % 2 == 0;
+                  final msg = conversations[index];
+                  final isUser = msg.actor == 'user';
                   return Align(
                     alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                     child: Container(
@@ -146,11 +152,11 @@ class MainState extends State<Main> {
                             color: Colors.black.withOpacity(0.25),
                             offset: const Offset(2, 2),
                             blurRadius: 5,
-                          )
+                          ),
                         ],
                       ),
                       child: renderTextWithLatex(
-                        message,
+                        msg.text,
                         GoogleFonts.quicksand(
                           color: isUser ? Colors.white : Colors.black,
                           fontSize: 16,
@@ -165,9 +171,5 @@ class MainState extends State<Main> {
         ),
       ),
     );
-  }
-
-  void updateUI() {
-    setState(() {});
   }
 }

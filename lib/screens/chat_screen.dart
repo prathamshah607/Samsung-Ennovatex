@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../data/data.dart';
-import '../functions/rag_functions.dart';
+import '../lib/data.dart';
+import '../backend/rag_functions.dart';
 import 'dart:io';
 
 class ChatScreen extends StatefulWidget {
@@ -16,17 +16,23 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    generateOffline(text, () => setState(() {}));
+
+    generateWithRag(text, () {
+      if (mounted) setState(() {}); // safe UI update
+    });
     _controller.clear();
   }
 
   Widget _buildMessageTile(Message msg) {
     bool isUser = msg.actor == 'user';
+    final messageText = msg.text.isNotEmpty ? msg.text : "<No content>"; // safety
+
     return Container(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -35,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              msg.text,
+              messageText,
               style: TextStyle(color: isUser ? Colors.white : Colors.black),
             ),
           ),
@@ -63,7 +69,8 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.all(8),
               itemCount: conversations.length,
               itemBuilder: (context, index) {
-                return _buildMessageTile(conversations[index]);
+                final msg = conversations[index];
+                return _buildMessageTile(msg);
               },
             ),
           ),
@@ -77,6 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: const InputDecoration(
                       hintText: "Type a message...",
                     ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 IconButton(
@@ -91,3 +99,4 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
